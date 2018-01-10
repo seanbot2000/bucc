@@ -1,0 +1,86 @@
+jobs:
+- name: concourse_workers
+  plan:
+  - aggregate:
+    - get: stemcell
+    - get: releases
+    - get: bosh-deployment
+    - get: kubo-deployment
+  - put: cloud-config
+    params:
+      manifest: bosh-deployment/warden/cloud-config.yml
+      releases: []
+  - put: deploy
+    params:
+      manifest: kubo-deployment/manifests/cfcr.yml
+      stemcells: [ stemcell/stemcell.tgz ]
+      releases: [ releases/release.tgz]
+      ops_files: [ kubo-deployment/manifests/ops-files/vm-types.yml kubo/ci/latest-stemcell.yml  ]
+      vars:
+        master_vm_type: default
+        worker_vm_type: default
+
+resources:
+- name: bosh-deployment
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry/bosh-deployment.git
+    branch: master
+
+- name: kubo-deployment
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry-incubator/kubo-deployment.git
+    branch: master
+
+- name: bucc
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry/bosh-deployment.git
+    branch: kubo
+
+- name: stemcell
+  type: bosh-io-stemcell
+  source:
+    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+    version: 3468.13
+
+- name: releases
+  type: bosh-io-release
+  source:
+    repository: cloudfoundry-incubator/kubo-release
+
+- name: deploy
+  type: bosh-deployment
+  source:
+    <<: *deployment
+    <<: *bosh_env
+
+- name: cloud-config
+  type: bosh-config
+  source:
+    type: cloud-config
+    <<: *bosh_env
+
+params:
+  bosh_env: &bosh_env
+    target: ((bosh_environment))
+    client: ((bosh_client))
+    client_id: ((bosh_client))
+    client_secret: ((bosh_client_secret))
+    ca_cert: ((bosh_ca_cert))
+  deployment: &deployment
+    deployment: cfcr
+
+resource_types:
+- name: bosh-config
+  type: docker-image
+  source:
+    repository: rkoster/bosh-config-resource
+    tag: latest
+
+- name: bosh-deployment
+  type: docker-image
+  source:
+    repository: cloudfoundry/bosh-deployment-resource
+    tag: latest
