@@ -6,6 +6,7 @@ jobs:
     - get: releases
     - get: bosh-deployment
     - get: kubo-deployment
+    - get: bucc
   - put: cloud-config
     params:
       manifest: bosh-deployment/warden/cloud-config.yml
@@ -15,7 +16,9 @@ jobs:
       manifest: kubo-deployment/manifests/cfcr.yml
       stemcells: [ stemcell/stemcell.tgz ]
       releases: [ releases/release.tgz]
-      ops_files: [ kubo-deployment/manifests/ops-files/vm-types.yml kubo/ci/latest-stemcell.yml  ]
+      ops_files:
+        - kubo-deployment/manifests/ops-files/vm-types.yml
+        - bucc/ci/assets/latest-stemcell.yml
       vars:
         master_vm_type: default
         worker_vm_type: default
@@ -36,7 +39,7 @@ resources:
 - name: bucc
   type: git
   source:
-    uri: https://github.com/cloudfoundry/bosh-deployment.git
+    uri: https://github.com/starkandwayne/bucc.git
     branch: kubo
 
 - name: stemcell
