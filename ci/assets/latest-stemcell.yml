@@ -1,3 +1,0 @@
-- type: replace
-  path: /stemcells/alias=trusty/version
-  value: latest

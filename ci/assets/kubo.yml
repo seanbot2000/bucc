@@ -18,7 +18,6 @@ jobs:
       releases: [ releases/release.tgz]
       ops_files:
         - kubo-deployment/manifests/ops-files/vm-types.yml
-        - bucc/ci/assets/latest-stemcell.yml
       vars:
         master_vm_type: default
         worker_vm_type: default
@@ -46,7 +45,7 @@ resources:
   type: bosh-io-stemcell
   source:
     name: bosh-warden-boshlite-ubuntu-trusty-go_agent
-    version: 3468.13
+    version_family: '3468.13'
 
 - name: releases
   type: bosh-io-release
