@@ -1,0 +1,24 @@
+# - type: replace
+#   path: /instance_groups/name=bosh/jobs/-
+#   value:
+#     name: import
+#     release: shield
+#     properties:
+#       import:
+# 	core: https://((internal_ip)):2443
+# 	token: ... # an auth token, from `buckler create-auth-token`
+
+# 	global:
+# 	  storage:
+# 	    - name: S3 Cloud Storage
+# 	      summary: |
+# 		Public S3 cloud storage for all SHIELD tenants to use
+# 	      agent:  127.0.0.1:5444
+# 	      plugin: s3
+# 	      config:
+# 		access_key_id:     AKI12
+# 		secret_access_key: secret
+
+# 	  policies:
+# 	    - name: Long-Term Storage
+# 	      days: 90

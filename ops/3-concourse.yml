@@ -17,7 +17,7 @@
         scope: concourse.main
       tls_cert: ((atc_ssl.certificate))
       tls_key: ((atc_ssl.private_key))
-      bind_port: 80
+      bind_port: 8081
       tls_bind_port: 443
       postgresql:
         host: 127.0.0.1

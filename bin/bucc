@@ -268,6 +268,10 @@ vars() {
     echo "concourse_password: $(int --path /instance_groups/0/jobs/name=atc/properties/basic_auth_password)"
     echo "concourse_ca_cert: |"
     echo "$(cat $(ca_cert) | sed 's/^/  /')"
+    echo "shield_url: $(int --path /instance_groups/0/jobs/name=shield-agent/properties/shield-url)"
+    echo "shield_password: $(int --path /instance_groups/0/jobs/name=core/properties/failsafe/password)"
+    echo "shield_ca_cert: |"
+    echo "$(cat $(ca_cert) | sed 's/^/  /')"
 }
 
 var_cache=${state}/vars_cache.yml
@@ -362,6 +366,28 @@ _credhub() {
             --ca-cert $(ca_cert) \
             --username credhub-cli \
             --password $(get_var credhub_password)
+}
+
+_shield() {
+    local url="https://github.com/starkandwayne/shield/releases/download"
+    local version=$(grep shield ${repo_root}/.versions | sed 's/[^0-9.]*\([0-9.]*\).*/\1/')
+    local cli_path=${repo_root}/bin/shield
+
+    # if ! ( [ -f ${cli_path} ] && ${cli_path} --version | grep ${version} > /dev/null); then
+    #   echo "installing shield cli '${version}' into: ${repo_root}/bin/"
+    #   pushd $(mktemp -d)
+    #   curl -s -L >shield "${url}/v${version}/shield-$(platform)-amd64"
+    #   chmod +x shield
+    #   mv shield ${repo_root}/bin/
+    #   popd
+    # fi
+
+    ${cli_path} api bucc $(get_var shield_url) \
+                --ca-cert "$(get_var shield_ca_cert)"
+
+    ${cli_path} login --core bucc \
+                --username admin \
+                --password "$(get_var shield_password)" 
 }
 
 _uaac() {
@@ -496,6 +522,10 @@ case "$1" in
 
     credhub)
         _credhub "$@"
+        ;;
+
+    shield)
+        _shield "$@"
         ;;
 
     uaac)
