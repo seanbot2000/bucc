@@ -4,7 +4,8 @@
   azs: [z1]
   vm_type:  default
   stemcell: default
-  networks: {name: default}
+  networks:
+    - name: default
   jobs:
     - name:    import
       release: shield
@@ -32,9 +33,9 @@
               summary: ""
               agent: ((internal_ip)):5444
               config:
-                bbr_host: ((internal_ip)) #((bosh_environment))
+                bbr_host: ((internal_ip))
                 bbr_sshusername: jumpbox
-                bbr_privatekey: ((bosh-privatekey))
+                bbr_privatekey: ((bosh_ssh_private_key))
               jobs:
                 - name: bosh
                   when: daily 4am
