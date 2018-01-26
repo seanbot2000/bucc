@@ -13,9 +13,9 @@
       - name:    import
         release: shield
         import:
-          core: https://((/concourse/main/internal_ip)):2443
+          core: https://((/concourse/main/bosh_environment)):2443
           ca: ((shield-tls.ca))
-          token: ((shield-token))
+          token: tokenplaceholder
           tenants:
           - name: main
             members:
@@ -24,7 +24,7 @@
             storage:
               - name: default
                 summary: ""
-                agent: ((/concourse/main/internal_ip)):5444
+                agent: ((/concourse/main/bosh_environment)):5444
                 plugin: s3
             policies:
               - name: default
@@ -34,9 +34,9 @@
               - name: bosh-bbr
                 plugin: bbr-director
                 summary: ""
-                agent: ((/concourse/main/internal_ip)):5444
+                agent: ((/concourse/main/bosh_environment)):5444
                 config:
-                  bbr_host: ((/concourse/main/internal_ip))
+                  bbr_host: ((/concourse/main/bosh_environment))
                   bbr_sshusername: jumpbox
                   bbr_privatekey: ((/concourse/main/bosh_ssh_private_key))
                 jobs:
@@ -48,7 +48,7 @@
               - name: atc
                 plugin: postgres
                 summary: ""
-                agent: ((/concourse/main/internal_ip)):5444
+                agent: ((/concourse/main/bosh_environment)):5444
                 config:
                   pg_bindir: /var/vcap/packages/postgres-9.6.4/bin
                   pg_database: atc
