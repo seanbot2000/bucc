@@ -34,26 +34,16 @@
         - name: concourse/main/bosh_client
           type: value
           value: admin
-        - name: concourse/main/bosh-name
+        - name: concourse/main/bosh_ssh_private_key
           type: value
-          value: ((director_name))
-        - name: concourse/main/bosh-environment
+          value: ((jumpbox_ssh.private_key))
+        - name: concourse/main/bosh_ssh_username
           type: value
-          value: ((internal_ip))
-        - name: concourse/main/bosh-ca-cert
-          type: value
-          value: ((director_ssl.ca))
-        - name: concourse/main/bosh-client-secret
-          type: value
-          value: ((admin_password))
-        - name: concourse/main/bosh-client
-          type: value
-          value: admin
-
-        - name: concourse/main/bosh-cpi
+          value: jumpbox
+        - name: concourse/main/bosh_cpi
           type: value
           value: ((shouldbereplaced))
-        - name: concourse/main/bosh-stemcell
+        - name: concourse/main/bosh_stemcell
           type: value
           value: ((shouldbereplaced))
 
@@ -63,25 +53,16 @@
           value: https://((internal_ip)):8844
         - name: concourse/main/credhub_username
           type: value
-          value: credhub-cli
+          value: credhub-admin
         - name: concourse/main/credhub_password
           type: value
-          value: ((credhub_cli_password))
+          value: ((credhub_admin_client_secret))
         - name: concourse/main/credhub_ca_cert
           type: value
           value: ((uaa_ssl.ca))((credhub_tls.ca))
         - name: concourse/main/credhub-url
           type: value
           value: https://((internal_ip)):8844
-        - name: concourse/main/credhub-username
-          type: value
-          value: credhub-cli
-        - name: concourse/main/credhub-password
-          type: value
-          value: ((credhub_cli_password))
-        - name: concourse/main/credhub-ca-cert
-          type: value
-          value: ((uaa_ssl.ca))((credhub_tls.ca))
         # Concourse
         - name: concourse/main/concourse_url
           type: value
@@ -93,18 +74,6 @@
           type: value
           value: ((ui_password))
         - name: concourse/main/concourse_ca_cert
-          type: value
-          value: ((atc_ssl.ca))
-        - name: concourse/main/concourse-url
-          type: value
-          value: https://((internal_ip))
-        - name: concourse/main/concourse-username
-          type: value
-          value: admin
-        - name: concourse/main/concourse-password
-          type: value
-          value: ((ui_password))
-        - name: concourse/main/concourse-ca-cert
           type: value
           value: ((atc_ssl.ca))
 
