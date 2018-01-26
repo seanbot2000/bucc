@@ -45,20 +45,20 @@
                     policy: default
                     storage: default
                     paused: false
-              - name: atc
-                plugin: postgres
-                summary: ""
-                agent: ((/concourse/main/bosh_environment)):5444
-                config:
-                  pg_bindir: /var/vcap/packages/postgres-9.6.4/bin
-                  pg_database: atc
-                  pg_host: 127.0.0.1
-                  pg_password: ((postgres_password))
-                  pg_port: "5432"
-                  pg_user: postgres
-                jobs:
-                  - name: atc
-                    when: daily 4am
-                    policy: default
-                    storage: default
-                    paused: false
+              # - name: atc
+              #   plugin: postgres
+              #   summary: ""
+              #   agent: ((/concourse/main/bosh_environment)):5444
+              #   config:
+              #     pg_bindir: /var/vcap/packages/postgres-9.6.4/bin
+              #     pg_database: atc
+              #     pg_host: 127.0.0.1
+              #     pg_password: ((postgres_password))
+              #     pg_port: "5432"
+              #     pg_user: postgres
+              #   jobs:
+              #     - name: atc
+              #       when: daily 4am
+              #       policy: default
+              #       storage: default
+              #       paused: false
