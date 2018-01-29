@@ -12,6 +12,35 @@
     url: https://github.com/shieldproject/shield-addon-bbr-boshrelease/releases/download/v0.1.0/shield-addon-bbr-0.1.0.tgz
     sha1: 2437d20b7f620b2100391035d172c96ac44c55cb
 
+- type: replace
+  path: /instance_groups/name=shield/jobs/-
+  value:
+    name:    store
+    release: shield
+    properties:
+      port: 2443
+      tls:
+        certificate: ((store-tls.certificate))
+        key:         ((store-tls.private_key))
+      webdav:
+        auth:
+          users:  { username: admin, password: admin }
+
+- type: replace
+  path: /variables/-
+  value:
+    name: store-tls
+    type: certificate
+    options:
+      ca: store-ca
+      common_name: store
+      extended_key_usage:
+        - client_auth
+        - server_auth
+      alternative_names:
+        - 127.0.0.1
+        - ((static_ip))
+        - "*.shield.default.shield.bosh"
 
 - type: replace
   path: /instance_groups/name=shield/jobs/-
@@ -33,7 +62,12 @@
             - name: default
               summary: ""
               agent: ((static_ip)):5444
-              plugin: s3
+              plugin: webdav
+              config:
+                url: ((static_ip)):2443
+                username: admin
+                password: admin
+
           policies:
             - name: default
               summary: ""
