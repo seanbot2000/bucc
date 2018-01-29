@@ -4,7 +4,7 @@
     name:    import
     release: shield
     properties:
-      domain: https://((static_ip))
+      domain: ((static_ip))
       import:
         core: https://((static_ip)):2443
         ca: ((shield-tls.ca))
