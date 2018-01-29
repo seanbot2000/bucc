@@ -3,36 +3,37 @@
   value:
     name:    import
     release: shield
-    import:
-      core: https://((/concourse/main/bosh_environment)):2443
-      ca: ((shield-tls.ca))
-      token: tokenplaceholder
-      tenants:
-      - name: main
-        members:
-          - user: admin@local
-            role: admin
-        storage:
-          - name: default
-            summary: ""
-            agent: ((/concourse/main/bosh_environment)):5444
-            plugin: s3
-        policies:
-          - name: default
-            summary: ""
-            days: 10
-        systems:
-          - name: bosh-bbr
-            plugin: bbr-director
-            summary: ""
-            agent: ((/concourse/main/bosh_environment)):5444
-            config:
-              bbr_host: ((/concourse/main/bosh_environment))
-              bbr_sshusername: jumpbox
-              bbr_privatekey: ((/concourse/main/bosh_ssh_private_key))
-            jobs:
-              - name: bosh
-                when: daily 4am
-                policy: default
-                storage: default
-                paused: false
+    properties:
+      import:
+        core: https://((/concourse/main/bosh_environment)):2443
+        ca: ((shield-tls.ca))
+        token: tokenplaceholder
+        tenants:
+        - name: main
+          members:
+            - user: admin@local
+              role: admin
+          storage:
+            - name: default
+              summary: ""
+              agent: ((/concourse/main/bosh_environment)):5444
+              plugin: s3
+          policies:
+            - name: default
+              summary: ""
+              days: 10
+          systems:
+            - name: bosh-bbr
+              plugin: bbr-director
+              summary: ""
+              agent: ((/concourse/main/bosh_environment)):5444
+              config:
+                bbr_host: ((/concourse/main/bosh_environment))
+                bbr_sshusername: jumpbox
+                bbr_privatekey: ((/concourse/main/bosh_ssh_private_key))
+              jobs:
+                - name: bosh
+                  when: daily 4am
+                  policy: default
+                  storage: default
+                  paused: false
