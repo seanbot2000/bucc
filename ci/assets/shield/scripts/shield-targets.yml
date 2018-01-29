@@ -4,8 +4,9 @@
     name:    import
     release: shield
     properties:
+      domain: https://((static_ip))
       import:
-        core: https://((/concourse/main/bosh_environment)):2443
+        core: https://((static_ip)):2443
         ca: ((shield-tls.ca))
         token: tokenplaceholder
         tenants:
