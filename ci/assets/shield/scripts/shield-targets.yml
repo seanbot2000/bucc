@@ -6,7 +6,7 @@
     properties:
       domain: ((static_ip))
       import:
-        core: https://((static_ip)):2443
+        core: https://((static_ip))
         ca: ((shield-tls.ca))
         token: tokenplaceholder
         tenants:
