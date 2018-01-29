@@ -7,6 +7,7 @@
 - type: replace
   path: /releases/-
   value:
+    name: shield-addon-bbr
     version: 0.1.0
     url: https://github.com/shieldproject/shield-addon-bbr-boshrelease/releases/download/v0.1.0/shield-addon-bbr-0.1.0.tgz
     sha1: 2437d20b7f620b2100391035d172c96ac44c55cb
