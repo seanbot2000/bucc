@@ -6,9 +6,10 @@ jobs:
     # - get: releases
     - get: bosh-deployment
     - get: shield-deployment
+    - get: bucc
   - put: cloud-config
     params:
-      manifest: bosh-deployment/((bosh-cpi))/cloud-config.yml
+      manifest: bosh-deployment/((bosh_cpi))/cloud-config.yml
       releases: []
   - put: deploy
     params:
@@ -17,6 +18,7 @@ jobs:
       # releases: [ releases/release.tgz]
       ops_files:
         - bucc/ci/assets/shield/scripts/shield-targets.yml
+        - shield-deployment/manifests/operators/dev.yml
       vars:
         static_ip: 10.244.0.34
         domain: 10.244.0.34
@@ -43,7 +45,7 @@ resources:
 - name: stemcell
   type: bosh-io-stemcell
   source:
-    name: ((bosh-stemcell))
+    name: ((bosh_stemcell))
 
 # - name: releases
 #   type: bosh-io-release
