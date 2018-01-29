@@ -32,7 +32,7 @@
           storage:
             - name: default
               summary: ""
-              agent: ((/concourse/main/bosh_environment)):5444
+              agent: ((static_ip)):5444
               plugin: s3
           policies:
             - name: default
@@ -42,7 +42,7 @@
             - name: bosh-bbr
               plugin: bbr-director
               summary: ""
-              agent: ((/concourse/main/bosh_environment)):5444
+              agent: ((static_ip)):5444
               config:
                 bbr_host: ((/concourse/main/bosh_environment))
                 bbr_sshusername: jumpbox
