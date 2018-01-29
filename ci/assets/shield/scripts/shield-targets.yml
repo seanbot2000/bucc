@@ -29,6 +29,15 @@
 - type: replace
   path: /variables/-
   value:
+    name: store-ca
+    type: certificate
+    options:
+      is_ca: true
+      common_name: storeca
+
+- type: replace
+  path: /variables/-
+  value:
     name: store-tls
     type: certificate
     options:
@@ -40,7 +49,7 @@
       alternative_names:
         - 127.0.0.1
         - ((static_ip))
-        - "*.shield.default.shield.bosh"
+        - "*.store.default.shield.bosh"
 
 - type: replace
   path: /instance_groups/name=shield/jobs/-
