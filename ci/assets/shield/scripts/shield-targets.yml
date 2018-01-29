@@ -1,6 +1,20 @@
 - type: replace
   path: /instance_groups/name=shield/jobs/-
   value:
+    name:    shield-addon-bbr-1.1.4
+    release: shield-addon-bbr
+
+- type: replace
+  path: /releases-
+  value:
+    version: 0.1.0
+    url: https://github.com/shieldproject/shield-addon-bbr-boshrelease/releases/download/v0.1.0/shield-addon-bbr-0.1.0.tgz
+    sha1: 2437d20b7f620b2100391035d172c96ac44c55cb
+
+
+- type: replace
+  path: /instance_groups/name=shield/jobs/-
+  value:
     name:    import
     release: shield
     properties:
