@@ -18,6 +18,7 @@
     name:    store
     release: shield
     properties:
+      port: 8080
       port: 2443
       tls:
         certificate: ((store-tls.certificate))
