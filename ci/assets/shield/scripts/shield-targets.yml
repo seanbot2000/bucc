@@ -24,7 +24,9 @@
         key:         ((store-tls.private_key))
       webdav:
         auth:
-          users:  { username: admin, password: admin }
+          users:
+            - username: admin
+              password: admin
 
 - type: replace
   path: /variables/-
