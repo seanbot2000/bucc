@@ -19,7 +19,7 @@
     release: shield
     properties:
       port: 8080
-      port: 2443
+      ssl_port: 2443
       tls:
         certificate: ((store-tls.certificate))
         key:         ((store-tls.private_key))
