@@ -18,8 +18,8 @@
     name:    store
     release: shield
     properties:
-      port: 8080
-      ssl_port: 2443
+      port: 8181
+      ssl_port: 8443
       tls:
         certificate: ((store-tls.certificate))
         key:         ((store-tls.private_key))
