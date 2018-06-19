@@ -608,18 +608,21 @@ _spruce() {
 }
 
 offline() {
-  # set -e
+  set -e
   _spruce
 
-  releases=$(spruce json <(echo "releases:"; ./bin/bucc int ${ops} --path /releases))
+  yml_filelocation=${project_root}/operators
+  offline_filelocation=${project_root}/offline_releases
+
+  releases=$(spruce json <(echo "releases:"; ./bin/bucc int --path /releases))
   relases_candidates=$(echo ${releases} | jq '.releases[] | select(.url)')
 
   echo "Downloading releases this can take a while!"
   temp_dir=$(mktemp -d)
+  trap "rm -rf ${temp_dir}" EXIT
+  mkdir -p ${yml_filelocation} ${offline_filelocation}
   pushd ${temp_dir}
   for release in $(echo ${relases_candidates} | jq -c '.'); do
-    yml_filelocation=${project_root}/operators
-    offline_filelocation=${project_root}/offline_releases
 
     name=$(echo ${release} | jq -r '.name')
     version=$(echo ${release} | jq -r '.version')
@@ -628,26 +631,26 @@ offline() {
     filename="${name}-${version}.tgz"
 
     if [ ! -f "${offline_filelocation}/${filename}" ]; then
-      curl -s -L -o ${filename} -J ${url}
+      curl --retry 5 -s -o ${filename} -L ${url}
 
-      cat > "99-${name}-offfline-compiled-release.yml" <<YML
+      cat > "9x-${name}-offfline-compiled-release.yml" <<YML
       - type: replace
         path: /releases/name=${name}?
         value:
           name: ${name}
           version: ${version}
-          file: ${filename}
+          url: file://${offline_filelocation}/${filename}
           sha1: ${sha1}
 YML
+    echo "Moving files for ${name}-release"
+    mv *.yml ${yml_filelocation} &>/dev/null
+    mv *.tgz ${offline_filelocation} &>/dev/null
     echo "Downloaded ${name}-release"
+  else
+    echo "Release ${name}-release was already downloaded"
   fi
   done
-
-  echo "Moving files"
-  mkdir -p ${filelocation} ${offline_filelocation}
-  mv *.yml ${yml_filelocation} &>/dev/null
-  mv *.tgz ${offline_filelocation} &>/dev/null
-  rm -rf ${temp_dir}
+  # TODO: get stemcell/download stemell provide overwrite yaml
   popd
 
   echo "Compressing files"
