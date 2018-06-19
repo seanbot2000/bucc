@@ -243,7 +243,7 @@ clean() {
     echo "your environment is still running, please tear it down with 'bucc down --clean'"
     exit 1
   fi
-  rm -rf ${state}
+  rm -rf ${state} "${project_root}/operators" "${project_root}/offline_releases"
   mv ${vars_file} ${vars_file}.bck
   echo "'state' dir has been cleaned and 'vars.yml' has been moved to 'vars.yml.bck'"
   echo "to also cleanup your current shell run `source <(bucc env --clean)`"
@@ -592,6 +592,70 @@ smoke_tests() {
     safe delete secret/account
 }
 
+_spruce() {
+    local url="https://github.com/geofffranks/spruce/releases/download"
+    local version=$(grep spruce ${repo_root}/.versions | cut -d= -f2)
+    local cli_path=${repo_root}/bin/spruce
+
+    if ! ( [ -f ${cli_path} ] && ${cli_path} --version | head -n 1 | grep ${version} > /dev/null); then
+      echo "installing spruce cli '${version}' into: ${repo_root}/bin/"
+      pushd $(mktemp -d)
+      curl -s -L >spruce "${url}/v${version}/spruce-$(platform)-amd64"
+      chmod +x spruce
+      mv spruce ${repo_root}/bin/
+      popd
+    fi
+}
+
+offline() {
+  # set -e
+  _spruce
+
+  releases=$(spruce json <(echo "releases:"; ./bin/bucc int ${ops} --path /releases))
+  relases_candidates=$(echo ${releases} | jq '.releases[] | select(.url)')
+
+  echo "Downloading releases this can take a while!"
+  temp_dir=$(mktemp -d)
+  pushd ${temp_dir}
+  for release in $(echo ${relases_candidates} | jq -c '.'); do
+    yml_filelocation=${project_root}/operators
+    offline_filelocation=${project_root}/offline_releases
+
+    name=$(echo ${release} | jq -r '.name')
+    version=$(echo ${release} | jq -r '.version')
+    url=$(echo ${release} | jq -r '.url')
+    sha1=$(echo ${release} | jq -r '.sha1')
+    filename="${name}-${version}.tgz"
+
+    if [ ! -f "${offline_filelocation}/${filename}" ]; then
+      curl -s -L -o ${filename} -J ${url}
+
+      cat > "99-${name}-offfline-compiled-release.yml" <<YML
+      - type: replace
+        path: /releases/name=${name}?
+        value:
+          name: ${name}
+          version: ${version}
+          file: ${filename}
+          sha1: ${sha1}
+YML
+    echo "Downloaded ${name}-release"
+  fi
+  done
+
+  echo "Moving files"
+  mkdir -p ${filelocation} ${offline_filelocation}
+  mv *.yml ${yml_filelocation} &>/dev/null
+  mv *.tgz ${offline_filelocation} &>/dev/null
+  rm -rf ${temp_dir}
+  popd
+
+  echo "Compressing files"
+  tar -zcf ~/bucc-${version}.tar.gz ${project_root}
+  echo "Your file is located in ~/bucc-${version}.tar.gz"
+
+}
+
 _ensure_bosh_cli_installed
 case "$1" in
     up)
@@ -731,6 +795,10 @@ case "$1" in
 
     test)
         smoke_tests
+        ;;
+
+    offline)
+        offline
         ;;
 
     *)
