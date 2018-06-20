@@ -690,7 +690,7 @@ YML
     mv *.tgz ${offline_filelocation} &>/dev/null
     echo "Downloaded ${name}-release"
   else
-    echo "Stemcell was already downloaded"
+    echo "Stemcell ${stemcell_name} ${stemcell_version} was already downloaded"
   fi
   popd
 
