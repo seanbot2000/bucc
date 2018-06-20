@@ -243,7 +243,7 @@ clean() {
     echo "your environment is still running, please tear it down with 'bucc down --clean'"
     exit 1
   fi
-  rm -rf ${state} "${project_root}/operators" "${project_root}/offline_releases"
+  rm -rf ${state} "${project_root}/operators" "${project_root}/offline_resources"
   mv ${vars_file} ${vars_file}.bck
   echo "'state' dir has been cleaned and 'vars.yml' has been moved to 'vars.yml.bck'"
   echo "to also cleanup your current shell run `source <(bucc env --clean)`"
@@ -612,9 +612,9 @@ offline() {
   _spruce
 
   yml_filelocation=${project_root}/operators
-  offline_filelocation=${project_root}/offline_releases
+  offline_filelocation=${project_root}/offline_resources
 
-  releases=$(spruce json <(echo "releases:"; ./bin/bucc int --path /releases))
+  releases=$(spruce json <(echo "releases:"; ${repo_root}/bin/bucc int --path /releases))
   relases_candidates=$(echo ${releases} | jq '.releases[] | select(.url)')
 
   echo "Downloading releases this can take a while!"
@@ -631,7 +631,8 @@ offline() {
     filename="${name}-${version}.tgz"
 
     if [ ! -f "${offline_filelocation}/${filename}" ]; then
-      curl --retry 5 -s -o ${filename} -L ${url}
+      echo "Starting to Download ${name}-release"
+      curl --retry 5 -s -f -o ${filename} -L ${url}
 
       cat > "9x-${name}-offfline-compiled-release.yml" <<YML
       - type: replace
@@ -639,7 +640,7 @@ offline() {
         value:
           name: ${name}
           version: ${version}
-          url: file://${offline_filelocation}/${filename}
+          url: "file://../../${filename}"
           sha1: ${sha1}
 YML
     echo "Moving files for ${name}-release"
@@ -650,7 +651,33 @@ YML
     echo "Release ${name}-release was already downloaded"
   fi
   done
-  # TODO: get stemcell/download stemell provide overwrite yaml
+  stemcell=$(spruce json <(${repo_root}/bin/bucc int --path /resource_pools/name=vms/stemcell) | jq 'select(.url)')
+  stemcell_sha1=$(echo ${stemcell} | jq -r '.sha1')
+  stemcell_url=$(echo ${stemcell} | jq -r '.url')
+  # TODO: getting the name could be handled better
+  stemcell_name=$(echo ${stemcell_url} | rev | cut -c-44 | cut -d= -f2 | cut -c3- | rev)
+  # TODO: make get version more robust
+  stemcell_version=$(echo ${stemcell_url} | cut -d= -f2)
+  stemcell_filename="${stemcell_name}-${stemcell_version}.tgz"
+
+  if [ ! -f "${offline_filelocation}/${stemcell_filename}" ]; then
+    echo "Starting to download stemcell"
+    curl --retry 5 -s -w '%{http_code}' -f -o ${stemcell_filename} -L ${stemcell_url}
+
+    cat > "9x-${name}-offfline-stemcell.yml" <<YML
+    - type: replace
+      path: /resource_pools/name=vms/stemcell?
+      value:
+        url: "file://../../${stemcell_filename}"
+        sha1: ${sha1}
+YML
+    echo "Moving files for ${name}-release"
+    mv *.yml ${yml_filelocation} &>/dev/null
+    mv *.tgz ${offline_filelocation} &>/dev/null
+    echo "Downloaded ${name}-release"
+  else
+    echo "Stemcell ${stemcell_name} ${stemcell_version} was already downloaded"
+  fi
   popd
 
   echo "Compressing files"
@@ -801,6 +828,7 @@ case "$1" in
         ;;
 
     offline)
+        shift
         offline
         ;;
 
