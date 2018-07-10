@@ -164,6 +164,7 @@ usage() {
     echo "  bbr -- wrapper for bbr cli"
     echo "  routes -- add routes for virtualbox"
     echo "  test -- check if all systems are operational"
+    echo "  offline -- create's an offline tarball, setting a path is optional. eg 'bucc offline /mypath/'"
     exit 1
 }
 
@@ -662,7 +663,7 @@ YML
 
   if [ ! -f "${offline_filelocation}/${stemcell_filename}" ]; then
     echo "Starting to download stemcell"
-    curl --retry 5 -s -w '%{http_code}' -f -o ${stemcell_filename} -L ${stemcell_url}
+    curl --retry 5 -s -f -o ${stemcell_filename} -L ${stemcell_url}
 
     cat > "9x-${name}-offfline-stemcell.yml" <<YML
     - type: replace
@@ -681,8 +682,10 @@ YML
   popd
 
   echo "Compressing files"
-  tar -zcf ~/bucc-${version}.tar.gz ${project_root}
-  echo "Your file is located in ~/bucc-${version}.tar.gz"
+  filelocation=${1:-'/tmp/'}
+  tarfile=${filelocation}bucc-${version}.tar.gz
+  tar -zcf ${tarfile} ${project_root}
+  echo "Your file is located in ${tarfile}"
 
 }
 
@@ -829,7 +832,7 @@ case "$1" in
 
     offline)
         shift
-        offline
+        offline "$@"
         ;;
 
     *)
