@@ -390,10 +390,11 @@ _bosh() {
 }
 
 _credhub_download() {
+  set -x
     local url="https://github.com/cloudfoundry-incubator/credhub-cli/releases/download"
     local version=$(grep credhub ${repo_root}/.versions | cut -d= -f2)
     local cli_path=${repo_root}/bin/credhub
-
+    # FIXME: credhub check version lags because if it cannot connect to credhub https://github.com/cloudfoundry-incubator/credhub-cli/issues/46
     if ! ( [ -f ${cli_path} ] && ${cli_path} --version | head -n 1 | grep ${version} > /dev/null); then
       echo "installing credhub cli '${version}' into: ${repo_root}/bin/"
       pushd $(mktemp -d)
@@ -661,20 +662,20 @@ YML
     echo "Release ${name}-release was already downloaded"
   fi
   done
+
   stemcell=$(spruce json <(${repo_root}/bin/bucc int --path /resource_pools/name=vms/stemcell) | jq 'select(.url)')
   stemcell_sha1=$(echo ${stemcell} | jq -r '.sha1')
   stemcell_url=$(echo ${stemcell} | jq -r '.url')
   # TODO: getting the name could be handled better
-  stemcell_name=$(echo ${stemcell_url} | rev | cut -c-44 | cut -d= -f2 | cut -c3- | rev)
+  stemcell_name=$(echo ${stemcell_url} | cut -d "-" -f 2,3,4,5)
   # TODO: make get version more robust
   stemcell_version=$(echo ${stemcell_url} | cut -d= -f2)
   stemcell_filename="${stemcell_name}-${stemcell_version}.tgz"
 
-  if [ ! -f "${offline_filelocation}/${stemcell_filename}" ]; then
+  if [ ! -f "${yml_filelocation}/9x-stemcell-offfline-stemcell.yml" ]; then
     echo "Starting to download stemcell"
     curl --retry 5 -s -f -o ${stemcell_filename} -L ${stemcell_url}
-
-    cat > "9x-${name}-offfline-stemcell.yml" <<YML
+    cat > "9x-stemcell-offfline-stemcell.yml" <<YML
     - type: replace
       path: /resource_pools/name=vms/stemcell?
       value:
@@ -686,11 +687,13 @@ YML
     mv *.tgz ${offline_filelocation} &>/dev/null
     echo "Downloaded ${name}-release"
   else
-    echo "Stemcell ${stemcell_name} ${stemcell_version} was already downloaded"
+    echo "Stemcell was already downloaded"
   fi
   popd
 
   echo "Compressing files"
+  # FIXME: for some reason gloabl version variable is not used, but the version of the last release in the manifest
+  version=$(grep bucc ${repo_root}/.versions | cut -d= -f2)
   filelocation=${1:-'/tmp/'}
   tarfile=${filelocation}bucc-${version}.tar.gz
   tar -zcf ${tarfile} ${project_root}
