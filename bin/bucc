@@ -654,7 +654,7 @@ offline() {
         value:
           name: ${name}
           version: ${version}
-          url: "file://../src/offline_resources/${filename}"
+          url: "file://../offline_resources/${filename}"
           sha1: ${sha1}
 YML
     echo "Moving files for ${name}-release"
