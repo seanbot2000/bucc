@@ -78,7 +78,7 @@ validate_vars_file() {
 
 validate_cpi() {
     local cpis_dir=${repo_root}/ops/cpis
-    if [ ! -d ${cpis_dir}/$(cpi) ]; then
+    if [ ! -d ${cpis_dir}/$1 ] || [ ! -d ${cpis_dir}/$(cpi) ]; then
         echo "'--cpi $(cpi)' not supported, please one of the following:"
         echo $(cpis | xargs)
         exit 1
@@ -87,7 +87,7 @@ validate_cpi() {
 
 validate_cpi_flags() {
     if [ -f ${state}/flags ]; then
-        for option in $(cat ${state}/flags); do
+        for option in  $(cat ${state}/flags) ; do
             local flags_dirs="${repo_root}/ops/flags"
             if [ -d "${repo_root}/ops/cpis/$(cpi)/flags" ]; then
                 flags_dirs+=" ${repo_root}/ops/cpis/$(cpi)/flags"
@@ -616,6 +616,7 @@ _spruce() {
     fi
 }
 
+# TODO: get rid of jq and spruce if possible otherwise add jq cli
 offline() {
   set -e
   _spruce
@@ -623,7 +624,9 @@ offline() {
   _bbr_download
 
   yml_filelocation=${project_root}/operators
-  offline_filelocation=${project_root}/offline_resources
+  offline_filelocation=${project_root}/src/offline_resources
+
+# TODO: offline should accept cpi +flags
 
   releases=$(spruce json <(echo "releases:"; ${repo_root}/bin/bucc int --path /releases))
   relases_candidates=$(echo ${releases} | jq '.releases[] | select(.url)')
@@ -651,7 +654,7 @@ offline() {
         value:
           name: ${name}
           version: ${version}
-          url: "file://../../${filename}"
+          url: "file://../src/offline_resources/${filename}"
           sha1: ${sha1}
 YML
     echo "Moving files for ${name}-release"
@@ -679,7 +682,7 @@ YML
     - type: replace
       path: /resource_pools/name=vms/stemcell?
       value:
-        url: "file://../../${stemcell_filename}"
+        url: "file://../offline_resources/${stemcell_filename}"
         sha1: ${sha1}
 YML
     echo "Moving files for ${name}-release"
@@ -713,6 +716,7 @@ case "$1" in
                     exit 0
                     ;;
                 --cpi)
+                    validate_cpi $2
                     echo "$2" > ${state}/cpi
                     shift
                     ;;
@@ -729,6 +733,7 @@ case "$1" in
                     bosh_args="${bosh_args} ${1}"
                     ;;
                 *)
+                    validate_cpi_flags ${1#*--}
                     echo ${1#*--} >> ${state}/flags
             esac
             shift
@@ -844,6 +849,32 @@ case "$1" in
 
     offline)
         shift
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -h|--help|help)
+                    offline_usage # TODO: write offline_usage
+                    exit 0
+                    ;;
+                --cpi)
+                    echo "$2" > ${state}/cpi
+                    shift
+                    ;;
+                --cpi=*)
+                    echo "${1#*=}" > ${state}/cpi
+                    ;;
+                --lite)
+                    echo "true" > ${state}/lite
+                    ;;
+                *)
+                    echo ${1#*--} >> ${state}/flags
+            esac
+            shift
+        done
+        normalize_flags
+        validate_cpi
+        validate_vars_file
+        validate_cpi_flags
+
         offline "$@"
         ;;
 
