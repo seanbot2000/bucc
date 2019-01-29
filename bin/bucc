@@ -69,7 +69,7 @@ validate_vars_file() {
     if [ ! -e $vars_file ]; then
         cp $cpi_vars $vars_file
         if [ ! $(cpi) = "virtualbox" ]; then
-            echo "We just copied a template in $vars_file please adjust it to your needs"
+            echo "We just copied a template in $vars_file please adjust it to your needs and run the command again"
             # we should break here or check file contents and see if we still have the right var file for the cpi
             exit 1
         fi
