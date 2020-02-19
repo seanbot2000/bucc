@@ -1,7 +1,22 @@
 # bosh-deployment
 
+This repository is intended to serve as a reference and starting point for developer-friendly configuration of the Bosh Director. Consume the `master` branch. 
+
+## How is bosh-deployment updated?
+An automatic process updates Bosh, and other releases within bosh-deployment
+
+1. A new release of [bosh](https://github.com/cloudfoundry/bosh) is created.
+1. A CI pipeline updates bosh-deployment on `develop` with a compiled bosh release.
+1. Smoke tests are performed to ensure `create-env` works with this potential collection of resources and the new release. 
+1. A commit to `master` is made.
+
+Other releases such as [UAA](https://github.com/cloudfoundry/uaa-release), [CredHub](https://github.com/pivotal-cf/credhub-release), and various CPIs are also updated automatically.
+
+## Using bosh-deployment
+
 * [Create an environment](https://bosh.io/docs/init.html)
     * [On Local machine (BOSH Lite)](https://bosh.io/docs/bosh-lite.html)
+    * [On Alibaba Cloud](https://bosh.io/docs/init-alicloud.html)
     * [On AWS](https://bosh.io/docs/init-aws.html)
     * [On Azure](https://bosh.io/docs/init-azure.html)
     * [On OpenStack](https://bosh.io/docs/init-openstack.html)
@@ -26,11 +41,11 @@
     * [Variable Interpolation](https://bosh.io/docs/cli-int.html)
     * [Tunneling](https://bosh.io/docs/cli-tunnel.html)
 
-## Ops files
+### Ops files
 
 - `bosh.yml`: Base manifest that is meant to be used with different CPI configurations
-- `[aws|azure|docker|gcp|openstack|softlayer|vcloud|vsphere|virtualbox]/cpi.yml`: CPI configuration
-- `[aws|azure|docker|gcp|openstack|softlayer|vcloud|vsphere|virtualbox]/cloud-config.yml`: Simple cloud configs
+- `[alicloud|aws|azure|docker|gcp|openstack|softlayer|vcloud|vsphere|virtualbox]/cpi.yml`: CPI configuration
+- `[alicloud|aws|azure|docker|gcp|openstack|softlayer|vcloud|vsphere|virtualbox]/cloud-config.yml`: Simple cloud configs
 - `jumpbox-user.yml`: Adds user `jumpbox` for SSH-ing into the Director (see [Jumpbox User](docs/jumpbox-user.md))
 - `uaa.yml`: Deploys UAA and enables UAA user management in the Director
 - `credhub.yml`: Deploys CredHub and enables CredHub integration in the Director
@@ -44,7 +59,7 @@
 
 See [tests/run-checks.sh](tests/run-checks.sh) for example usage of different ops files.
 
-## Security Groups
+### Security Groups
 
 Please ensure you have security groups setup correctly. i.e:
 

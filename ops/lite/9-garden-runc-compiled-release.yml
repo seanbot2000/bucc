@@ -1,0 +1,7 @@
+- type: replace
+  path: /releases/name=garden-runc?
+  value:
+    name: garden-runc
+    version: 1.19.7
+    url: https://s3-eu-west-1.amazonaws.com/bucc-compiled-releases/garden-runc-1.19.7-ubuntu-xenial-621.29-20191211-095722-968998851.tgz
+    sha1: 5dc98b4c434f9469b6b3e3cd9554d744494eef2f

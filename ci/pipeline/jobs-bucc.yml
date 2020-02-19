@@ -4,7 +4,7 @@ jobs:
   serial: true
   plan:
     - do:
-      - aggregate:
+      - in_parallel:
         - { get: bucc, trigger: true }
         - { get: bucc-ci }
       - task: bucc-manifests
@@ -22,53 +22,54 @@ jobs:
   serial: true
   plan:
     - do:
-      - aggregate:
+      - in_parallel:
         - { get: bucc, trigger: true, passed: [sanity-check] }
         - { get: bucc-ci }
       - task: cleanup-vsphere
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-integration-test]
         params: &cleanup-integration-params
-          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@10.58.111.2"  ))
+          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@" meta.vcenter.ip ))
           GOVC_INSECURE: true
-          CLEANUP_VM_WITH_IP: 10.213.8.1
+          CLEANUP_VM_TAG: integration-test
       - task: bucc-up-vsphere
         file: bucc-ci/ci/tasks/bucc-up/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-integration-test]
         params:
-          ARGS: --cpi vsphere --lite
+          ARGS: --cpi vsphere --lite --tags
           VARS:
             director_name: snw-bosh
-            internal_cidr: 10.213.0.0/20
-            internal_gw: 10.213.0.1
-            internal_ip: 10.213.8.1
-            network_name: net-10-213-0-0
-            vcenter_ip: 10.58.111.2
+            internal_cidr: 10.135.0.0/16
+            internal_gw: 10.135.0.1
+            internal_ip: 10.135.8.1
+            network_name: 10-135
+            vcenter_ip: (( grab meta.vcenter.ip ))
             vcenter_password: (( grab meta.vcenter.password ))
             vcenter_user: (( grab meta.vcenter.username ))
-            vcenter_dc: Interxion MAD2
-            vcenter_ds: starkwayne_hybrid
+            vcenter_dc: Buffalo-Lab
+            vcenter_ds: iSCSI-1
             vcenter_disks: bucc-ci
             vcenter_templates: bucc-ci/templates
             vcenter_vms: bucc-ci/vms
             vcenter_cluster: cluster1
+            tags: { ci_job: integration-test }
       - task: bucc-test-vsphere
         input_mapping: { bucc-state: bucc-state-out }
         file: bucc-ci/ci/tasks/bucc-test/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-integration-test]
       - task: bucc-acceptance-test
         input_mapping: { bucc-state: bucc-state-out }
         file: bucc-ci/ci/tasks/bucc-acceptance-test/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-integration-test]
         attempts: 5
       - task: bucc-down-vsphere
         input_mapping: { bucc-state: bucc-state-out }
         file: bucc-ci/ci/tasks/bucc-down/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-integration-test]
       ensure:
         task: cleanup-vsphere
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-integration-test]
         params: *cleanup-integration-params
       on_failure:
         put: notify
@@ -83,58 +84,61 @@ jobs:
   serial: true
   plan:
     - do:
-      - aggregate:
+      - in_parallel:
         - { get: bucc, trigger: true, passed: [sanity-check] }
         - { get: bucc-ci }
         - { get: bucc-stable }
       - task: cleanup-vsphere
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-upgrade-test]
         params: &cleanup-upgrade-params
-          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@10.58.111.2"  ))
+          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@" meta.vcenter.ip  ))
           GOVC_INSECURE: true
-          CLEANUP_VM_WITH_IP: 10.213.8.2
+          CLEANUP_VM_TAG: upgrade-test
       - task: bucc-up-vsphere
         input_mapping: { bucc: bucc-stable }
         file: bucc-ci/ci/tasks/bucc-up/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-upgrade-test]
         params: &up-upgrade-params
           ARGS: --cpi vsphere
-          VARS:
+          VARS: &up-upgrade-params-vars
             director_name: snw-bosh
-            internal_cidr: 10.213.0.0/20
-            internal_gw: 10.213.0.1
-            internal_ip: 10.213.8.2
-            network_name: net-10-213-0-0
-            vcenter_ip: 10.58.111.2
+            internal_cidr: 10.135.0.0/16
+            internal_gw: 10.135.0.1
+            internal_ip: 10.135.8.2
+            network_name: 10-135
+            vcenter_ip: (( grab meta.vcenter.ip ))
             vcenter_password: (( grab meta.vcenter.password ))
             vcenter_user: (( grab meta.vcenter.username ))
-            vcenter_dc: Interxion MAD2
-            vcenter_ds: starkwayne_hybrid
+            vcenter_dc: Buffalo-Lab
+            vcenter_ds: iSCSI-1
             vcenter_disks: bucc-ci
             vcenter_templates: bucc-ci/templates
             vcenter_vms: bucc-ci/vms
             vcenter_cluster: cluster1
+            tags: { ci_job: upgrade-test }
       - task: bucc-pre-upgrade-test-vsphere
         file: bucc-ci/ci/tasks/bucc-upgrade-test/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-upgrade-test]
         params: { TEST: set }
         input_mapping: { bucc: bucc-stable, bucc-state: bucc-state-out }
       - task: bucc-upgrade-vsphere
         file: bucc-ci/ci/tasks/bucc-upgrade/task.yml
-        tags: [vsphere]
-        params: *up-upgrade-params
+        tags: [vsphere-bucc-upgrade-test]
+        params:
+          ARGS: --cpi vsphere --tags
+          VARS: *up-upgrade-params-vars
         attempts: 2
         input_mapping: { bucc-state: bucc-state-out }
       - task: bucc-post-upgrade-test-vsphere
         file: bucc-ci/ci/tasks/bucc-upgrade-test/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-upgrade-test]
         params: { TEST: get }
         input_mapping: { bucc-state: bucc-state-out }
       ensure:
         task: cleanup-vsphere
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-upgrade-test]
         params: *cleanup-upgrade-params
       on_failure:
         put: notify
@@ -149,71 +153,72 @@ jobs:
   serial: true
   plan:
     - do:
-      - aggregate:
+      - in_parallel:
         - { get: bucc, trigger: true, passed: [sanity-check] }
         - { get: bucc-ci }
       - task: cleanup
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: &cleanup-dr-params
-          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@10.58.111.2"  ))
+          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@" meta.vcenter.ip  ))
           GOVC_INSECURE: true
-          CLEANUP_VM_WITH_IP: 10.213.8.3
+          CLEANUP_VM_TAG: disaster-recovery-test
       - task: bucc-up
         file: bucc-ci/ci/tasks/bucc-up/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: &up-dr-params
-          ARGS: --cpi vsphere
+          ARGS: --cpi vsphere --tags
           VARS:
             director_name: snw-bosh
-            internal_cidr: 10.213.0.0/20
-            internal_gw: 10.213.0.1
-            internal_ip: 10.213.8.3
-            network_name: net-10-213-0-0
-            vcenter_ip: 10.58.111.2
+            internal_cidr: 10.135.0.0/16
+            internal_gw: 10.135.0.1
+            internal_ip: 10.135.8.3
+            network_name: 10-135
+            vcenter_ip: (( grab meta.vcenter.ip ))
             vcenter_password: (( grab meta.vcenter.password ))
             vcenter_user: (( grab meta.vcenter.username ))
-            vcenter_dc: Interxion MAD2
-            vcenter_ds: starkwayne_hybrid
+            vcenter_dc: Buffalo-Lab
+            vcenter_ds: iSCSI-1
             vcenter_disks: bucc-ci
             vcenter_templates: bucc-ci/templates
             vcenter_vms: bucc-ci/vms
             vcenter_cluster: cluster1
+            tags: { ci_job: disaster-recovery-test }
       - task: pre-disaster-test
         file: bucc-ci/ci/tasks/bucc-upgrade-test/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: { TEST: set }
         input_mapping: { bucc-state: bucc-state-out }
       - task: bbr-backup
         file: bucc-ci/ci/tasks/bucc-bbr-backup/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         input_mapping: { bucc-state: bucc-state-out }
       - task: disaster
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: *cleanup-dr-params
       - task: bbr-restore-creds
         file: bucc-ci/ci/tasks/bucc-bbr-restore-creds/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
       - task: bucc-up
         file: bucc-ci/ci/tasks/bucc-upgrade/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: *up-dr-params
         input_mapping: { bucc-state: bucc-state-out }
       - task: bbr-restore
         file: bucc-ci/ci/tasks/bucc-bbr-restore/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         input_mapping: { bucc-state: bucc-state-out }
       - task: post-disaster-test
         file: bucc-ci/ci/tasks/bucc-upgrade-test/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: { TEST: get }
         input_mapping: { bucc-state: bucc-state-out }
         attempts: 3
       ensure:
         task: cleanup
         file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
-        tags: [vsphere]
+        tags: [vsphere-bucc-disaster-recovery-test]
         params: *cleanup-dr-params
       on_failure:
         put: notify
@@ -223,13 +228,117 @@ jobs:
           icon_url: (( grab meta.slack.icon ))
           text:    '(( concat meta.slack.fail_url " " meta.pipeline ": disaster-recovery-test job failed" ))'
 
-- name: rc
+- name: offline-test
   public: true
+  serial: true
   plan:
     - do:
-      - aggregate:
-          - { get: bucc,    trigger: true,  passed: [integration-test, upgrade-test, disaster-recovery-test] }
-          - { get: version, trigger: true, params: {pre: rc} }
+      - in_parallel:
+        - { get: bucc, trigger: true, passed: [sanity-check] }
+        - { get: bucc-ci }
+      - task: cleanup-vsphere
+        file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
+        tags: [vsphere-bucc-offline-test]
+        params: &cleanup-offline-params
+          GOVC_URL: (( concat meta.vcenter.username ":" meta.vcenter.password "@" meta.vcenter.ip  ))
+          GOVC_INSECURE: true
+          CLEANUP_VM_TAG: offline-test
+      - task: bucc-offline-vsphere
+        file: bucc-ci/ci/tasks/bucc-offline/task.yml
+        privileged: true
+        tags: [vsphere-bucc-offline-test]
+        params:
+          ARGS: --cpi vsphere --lite --tags
+          VARS:
+            director_name: snw-bosh
+            internal_cidr: 10.135.0.0/16
+            internal_gw: 10.135.0.1
+            internal_ip: 10.135.8.4
+            network_name: 10-135
+            vcenter_ip: (( grab meta.vcenter.ip ))
+            vcenter_password: (( grab meta.vcenter.password ))
+            vcenter_user: (( grab meta.vcenter.username ))
+            vcenter_dc: Buffalo-Lab
+            vcenter_ds: iSCSI-1
+            vcenter_disks: bucc-ci
+            vcenter_templates: bucc-ci/templates
+            vcenter_vms: bucc-ci/vms
+            vcenter_cluster: cluster1
+            tags: { ci_job: offline-test }
+      - task: bucc-test-vsphere
+        input_mapping: { bucc-state: bucc-state-out }
+        file: bucc-ci/ci/tasks/bucc-test/task.yml
+        tags: [vsphere-bucc-offline-test]
+        attempts: 5
+      - task: bucc-down-vsphere
+        input_mapping: { bucc-state: bucc-state-out }
+        file: bucc-ci/ci/tasks/bucc-down/task.yml
+        tags: [vsphere-bucc-offline-test]
+      ensure:
+        task: cleanup-vsphere
+        file: bucc-ci/ci/tasks/cleanup-vshpere-ci-vm/task.yml
+        tags: [vsphere-bucc-offline-test]
+        params: *cleanup-offline-params
+      on_failure:
+        put: notify
+        params:
+          channel:  (( grab meta.slack.channel ))
+          username: (( grab meta.slack.username ))
+          icon_url: (( grab meta.slack.icon ))
+          text:    '(( concat meta.slack.fail_url " " meta.pipeline ": offline-test job failed" ))'
+
+- name: pre
+  public: true
+  serial: true
+  plan:
+  - do:
+    - in_parallel:
+        - { get: bucc,    trigger: true,  passed: [integration-test, upgrade-test, disaster-recovery-test, offline-test] }
+        - { get: version, trigger: true }
+    - task: release-notes
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: starkandwayne/concourse
+        inputs:
+            - { name: bucc }
+        run:
+          path: sh
+          args:
+          - -ce
+          - |
+            cd bucc
+            if [ -f ci/release_notes.md ]; then
+              echo "######   RELEASE NOTES   ###############"
+              echo
+              cat ci/release_notes.md
+              echo
+              echo "########################################"
+              echo
+            else
+              echo "NO RELEASE NOTES HAVE BEEN WRITTEN"
+              echo "You *might* want to do that before"
+              echo "hitting (+) on that shipit job..."
+              echo
+            fi
+    on_failure:
+      put: notify
+      params:
+        channel:  (( grab meta.slack.channel ))
+        username: (( grab meta.slack.username ))
+        icon_url: (( grab meta.slack.icon ))
+        text:    '(( concat meta.slack.fail_url " " meta.pipeline ": pre job failed" ))'
+
+- name: rc
+  public: true
+  serial: true
+  plan:
+    - do:
+      - in_parallel:
+          - { get: bucc,    trigger: true,  passed: [pre] }
+          - { get: version, trigger: false, passed: [pre], params: {pre: rc} }
       - put: version
         params: {file: version/number}
       on_failure:
@@ -287,7 +396,7 @@ jobs:
   plan:
     - do:
       - name: inputs
-        aggregate:
+        in_parallel:
           - { get: version, passed: [rc], params: {bump: final} }
           - { get: bucc,    passed: [upgrade-test] }
           - { get: bucc-ci }

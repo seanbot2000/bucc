@@ -2,15 +2,22 @@
 
 set -x
 
-curl -L -s https://github.com/vmware/govmomi/releases/download/v0.18.0/govc_linux_amd64.gz | gunzip >/usr/local/bin/govc
+curl -L -s https://github.com/vmware/govmomi/releases/download/v0.21.0/govc_linux_amd64.gz | gunzip >/usr/local/bin/govc
 chmod +x /usr/local/bin/govc
 
-templates=$(govc vm.info -vm.ip ${CLEANUP_VM_WITH_IP} -json | grep -o 'sc-[-[:alnum:]]*' | sort -u | head -1)
+BASE=/Buffalo-Lab/vm/bucc-ci
+govc ls ${BASE}/vms \
+    | xargs -L1 govc vm.info -json -vm.ipath=  \
+    | jq -r -S --arg tag $CLEANUP_VM_TAG '.VirtualMachines
+      | map(select(.Value[].Value | contains($tag)))
+      | .[].Config.Hardware.Device[].Backing.Parent.FileName' \
+          | grep -v null | cut -d/ -f1 | cut -d' ' -f2 \
+          | xargs -I{} -L1 govc vm.destroy ${BASE}/templates/{}
 
-govc vm.destroy -vm.ip ${CLEANUP_VM_WITH_IP} | true
-
-for del in $templates; do
-  remove=$(echo "${del}" | xargs ) # remove leading spaces
-  echo "deleting ${del}"
-  govc vm.destroy "/Interxion MAD2/vm/bucc-ci/templates/${remove}"
-done
+govc ls ${BASE}/vms \
+    | xargs -L1 govc vm.info -json -vm.ipath=  \
+    | jq -r -S --arg tag $CLEANUP_VM_TAG '.VirtualMachines
+      | map(select(.Value[].Value | contains($tag)))
+      | .[].Config.Name' \
+          | grep -v null | xargs -I{} govc vm.destroy ${BASE}/vms/{}  \
+          | true

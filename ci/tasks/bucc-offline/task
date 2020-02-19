@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -d bucc-state/state ]; then
+    mv bucc-state/{vars.yml,state} bucc/ || true
+fi
+
+# Never skip deploy, needed for DR tests
+if [ -f bucc/state/state.json ]; then
+    jq '.current_manifest_sha = ""' bucc/state/state.json > state.json
+    mv state.json bucc/state/state.json
+fi
+
+mkdir -p ${PWD}/bosh-cache/.bosh
+rm -rf ${HOME}/.bosh
+ln -s ${PWD}/bosh-cache/.bosh/ ${HOME}/.bosh
+
+pushd bucc > /dev/null
+
+echo "==== Bucc version ===="
+./bin/bucc | head -n1
+
+echo "==== Creating vars file ===="
+echo ${VARS} > "vars.yml"
+
+echo "==== Creating offline tarball ===="
+./bin/bucc offline ${ARGS} --destination /tmp/offline
+
+tar -xf /tmp/offline/bucc-*.tar.gz -C /tmp/offline
+
+popd
+pushd /tmp/offline/bucc
+
+echo "==== Enable Firewall ===="
+apt-get install -q -y ufw
+ufw allow out from any to 10.0.0.0/8
+ufw allow out 53
+ufw default deny outgoing
+ufw enable
+
+echo "==== Run BUCC up ===="
+./bin/bucc up
+
+popd > /dev/null
+
+mv /tmp/offline/bucc/{vars.yml,state} bucc-state-out

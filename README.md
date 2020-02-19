@@ -6,9 +6,9 @@ The bucc command line utility allows for easy bootstrapping of the BUCC stack (B
 
 ### Prepare the Environment
 
-1. Install [BOSH CLI v2.0.1+](https://bosh.io/docs/cli-v2.html)
+1. Install [BOSH CLI v2.0.1+](https://bosh.io/docs/cli-v2.html) and [dependencies](https://bosh.io/docs/cli-v2-install/#additional-dependencies).
 
-2. Optionall install [`direnv`](https://direnv.net/)
+2. Optionally install [`direnv`](https://direnv.net/)
 
 3. Clone this repository
 
@@ -23,19 +23,26 @@ source .envrc # if not using direnv
 Choose your cpi:
 ```
 bucc up --help
-  --cpi    Cloud provider: [aws, gcp, virtualbox, azure, softlayer, openstack, vsphere, docker]
-  --lite   Created bosh will use the warden cpi with garden runc
-  --debug  Show arguments passed to 'bosh create-env'
+  --cpi      Cloud provider: [aws, virtualbox, gcp, docker-desktop, softlayer, openstack, azure, docker, vsphere]
+  --lite     Created bosh will use the warden cpi with garden runc
+  --recreate Recreate VM in deployment, also when there are no changes
+  --debug    Show arguments passed to 'bosh create-env'
+  --concourse-ca-certs
+  --concourse-lb
+  --concourse-syslog
+  --ldap
   --oauth-providers
   --proxy
 
   Optional cpi specific flags:
-    azure: --managed-disks
-    gcp: --service-account
+    aws: --auto-assign-public-ip --lb-target-groups --security-groups --spot-instance
+    virtualbox: --remote
+    gcp: --ephemeral-external-ip --service-account --target-pool
     softlayer: --cpi-dynamic
-    openstack: --custom-ca --disk-az --dns --ignore-server-availability-zone --keystone-v2 --ntp --root-disk-size --trusted-certs
-    vsphere: --dns --resource-pool
+    openstack: --custom-ca --disk-az --dns --floating-ip --ignore-server-availability-zone --keystone-v2 --ntp --root-disk-size --trusted-certs
+    azure: --load-balancer --managed-disks
     docker: --unix-sock
+    vsphere: --dns --resource-pool
 ```
 
 From the repo root run:
@@ -58,15 +65,17 @@ $ source <(bucc env) # should not be necessary when using direnv
 $ bosh alias-env bucc
   Using environment '192.168.50.6' as client 'admin'
 
-  Name      Bosh
-  Director
-  UUID      3e107016-3fc2-40af-8ac5-8e53025d53f3
-  Version   260.5.0 (00000000)
-  CPI       virtualbox_cpi
-  Features  compiled_package_cache: disabled
-            dns: disabled
-            snapshots: disabled
-  User      admin
+  Name               bosh
+  UUID               94e87b44-a7eb-4b67-a568-52553f87cd6e
+  Version            268.6.0 (00000000)
+  Director Stemcell  ubuntu-xenial/170.9
+  CPI                warden_cpi
+  Features           compiled_package_cache: disabled
+                     config_server: enabled
+                     local_dns: enabled
+                     power_dns: disabled
+                     snapshots: disabled
+  User               admin
 
   Succeeded
 
@@ -78,33 +87,32 @@ $ bosh vms
 
 ### Using UAA
 
-1. Install the cli
+1. Use UAA
 
 ```
-gem install cf-uaac
-```
+$ bucc uaa
 
-2. Use UAA
+  installing uaa cli '0.0.1' into: /Users/dcarter/fun/tryagain/bucc/bin/
+  Target set to https://192.168.50.6:8443
+  Access token successfully fetched and added to context.
 
-```
-$ bucc uaac
-
-  Target: https://192.168.50.6:8443
-  Context: uaa_admin, from client uaa_admin
-
-
-  Successfully fetched token via client credentials grant.
-  Target: https://192.168.50.6:8443
-  Context: uaa_admin, from client uaa_admin
-
-$ uaac client get admin
-  scope: uaa.none
-  client_id: admin
-  resource_ids: none
-  authorized_grant_types: client_credentials
-  autoapprove:
-  authorities: bosh.admin
-  lastmodified: 1490280436993
+$ uaa get-client admin
+  {
+    "client_id": "admin",
+    "scope": [
+      "uaa.none"
+    ],
+    "resource_ids": [
+      "none"
+    ],
+    "authorized_grant_types": [
+      "client_credentials"
+    ],
+    "authorities": [
+      "bosh.admin"
+    ],
+    "lastModified": 1549969159011 .
+  }
 ```
 
 ### Using Credhub
@@ -112,14 +120,19 @@ $ uaac client get admin
 ```
 $ source <(bucc env) # should not be necessary when using direnv
 
+$ bucc credhub
+Setting the target url: https://192.168.50.6:8844
+Login Successful
+
 $ credhub api
 https://192.168.50.6:8844
 
 $ credhub generate -t password --name test
-  Type:          password
-  Name:          /test
-  Value:         Nfjbu0HKKI9eHmbGY6hNLjssDphpdO
-  Updated:       2017-03-23T14:49:03Z
+  id: 63947a28-ee47-4d3c-9320-7972c70ec431
+  name: /test
+  type: password
+  value: <redacted>
+  version_created_at: "2019-02-10T13:35:06Z"
 ```
 
 ### Using Concourse
@@ -138,7 +151,12 @@ bucc info
 ```
 $ bucc fly
 
+  logging in to team 'main'
+
   target saved
+  Example fly commands:
+    fly -t bucc pipelines
+    fly -t bucc builds
 
 $ fly -t bucc pipelines
   name  paused  public
@@ -161,4 +179,14 @@ last_backup=$(find . -type d -regex ".+_.+Z" | sort -r | head -n1)
 tar -xf ${last_backup}/bosh-0-bucc-creds.tar -C state
 bucc up # clean BUCC with credentials (creds.yml) from backup
 bucc bbr restore --artifact-path=${last_backup}
+```
+
+## Support for air-gapped environments
+To use bucc in an offline environment run:
+
+```
+bucc offline --cpi virtualbox --lite --destination /tmp/offline
+# copy /tmp/offline/bucc-*.tgz to your offline envrionment
+tar -xf bucc-*.tgz && bucc
+./bin/bucc up
 ```
